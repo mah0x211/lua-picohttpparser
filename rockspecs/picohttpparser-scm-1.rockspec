@@ -1,7 +1,7 @@
 package = "picohttpparser"
 version = "scm-1"
 source = {
-    url = "git://github.com/mah0x211/lua-picohttpparser.git"
+    url = "gitrec://github.com/mah0x211/lua-picohttpparser.git"
 }
 description = {
     summary = "picohttpparser for lua",
@@ -10,12 +10,13 @@ description = {
     maintainer = "Masatoshi Teruya"
 }
 dependencies = {
-    "lua >= 5.1"
+    "lua >= 5.1",
+    "luarocks-fetch-gitrec >= 0.2"
 }
 build = {
     type = "command",
     build_command = [[
-        git submodule update && autoreconf -ivf && CFLAGS="$(CFLAGS)" CPPFLAGS="-I$(LUA_INCDIR)" LIBFLAG="$(LIBFLAG)" OBJ_EXTENSION="$(OBJ_EXTENSION)" LIB_EXTENSION="$(LIB_EXTENSION)" LIBDIR="$(LIBDIR)" ./configure && make clean && make
+        autoreconf -ivf && CFLAGS="$(CFLAGS)" CPPFLAGS="-I$(LUA_INCDIR)" LIBFLAG="$(LIBFLAG)" OBJ_EXTENSION="$(OBJ_EXTENSION)" LIB_EXTENSION="$(LIB_EXTENSION)" LIBDIR="$(LIBDIR)" ./configure && make clean && make
     ]],
     install_command = "make install"
 }

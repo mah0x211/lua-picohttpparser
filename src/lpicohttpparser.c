@@ -124,6 +124,54 @@ static int parse_request_lua( lua_State *L )
 }
 
 
+static int parse_response_lua( lua_State *L )
+{
+    lpicohttpparser_t *p = luaL_checkudata( L, 1, MODULE_MT );
+    size_t len = 0;
+    const char *buf = luaL_checklstring( L, 2, &len );
+    lua_Integer prevlen = luaL_optint( L, 3, 0 );
+    size_t nhdr = p->maxhdr;
+    int minor_ver = 0;
+    int status = 0;
+    const char *msg = NULL;
+    size_t mlen = 0;
+    size_t i = 0;
+    
+    // returns number of bytes consumed if successful, 
+    // -2 if request is partial,
+    // -1 if failed
+    prevlen = phr_parse_response( buf, len, &minor_ver, &status, &msg, &mlen,
+                                  p->headers, &nhdr, (size_t)prevlen );
+    switch( prevlen )
+    {
+        // invalid request
+        case -1:
+        // response is incomplete
+        case -2:
+            lua_pushnil( L );
+        break;
+        
+        // successfully parsed the request
+        default:
+            lua_createtable( L, 0, 4 );
+            lstate_num2tbl( L, "minor_version", minor_ver );
+            lstate_num2tbl( L, "status", status );
+            lstate_strl2tbl( L, "message", msg, mlen );
+            // create header table
+            lua_pushstring( L, "header" );
+            lua_createtable( L, 0, nhdr );
+            for(; i < nhdr; i++ ){
+                lstate_strll2tbl( L, p->headers[i].name, p->headers[i].name_len,
+                                  p->headers[i].value, p->headers[i].value_len );
+            }
+            lua_rawset( L, -3 );
+    }
+    
+    lua_pushinteger( L, prevlen );
+    return 2;
+}
+
+
 static int tostring_lua( lua_State *L )
 {
     lua_pushfstring( L, MODULE_MT ": %p", lua_touserdata( L, 1 ) );
@@ -172,6 +220,7 @@ LUALIB_API int luaopen_picohttpparser( lua_State *L )
     struct luaL_Reg methods[] = {
         // method
         { "parseRequest", parse_request_lua },
+        { "parseResponse", parse_response_lua },
         { NULL, NULL }
     };
     struct luaL_Reg *ptr = mmethods;

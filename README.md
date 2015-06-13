@@ -48,6 +48,37 @@ parse HTTP request.
 2. `consume:number`: number of bytes consumed on success, -1 on invalid request, -2 on request is incomplete.
 
 
+**Field names of request table**
+
+- `method:string`: method name.
+- `path:string`: pathname.
+- `minor_version:number`: minor version of HTTP version.
+- `header:table`: request headers.
+
+
+### res, consume = phr:parseResponse( str:string [, prevlen:number] )
+
+parse HTTP response.
+
+**Parameters**
+
+- `str:string`: HTTP request string.
+- `prevlen:number`: previous str length. `default 0`
+
+
+**Returns**
+
+1. `res:table`: response table on success, or a nil on failure.
+2. `consume:number`: number of bytes consumed on success, -1 on invalid request, -2 on request is incomplete.
+
+
+**Field names of response table**
+
+- `minor_version:number`: minor version of HTTP version.
+- `status:number`: status code.
+- `message:string`: message string.
+- `header:table`: response headers.
+
 
 ## Usage
 

@@ -2,6 +2,11 @@
 
 picohttpparser module for lua.
 
+## Dependencies
+
+- luarocks-fetch-gitrec: https://github.com/siffiejoe/luarocks-fetch-gitrec
+- picohttpparser: https://github.com/h2o/picohttpparser
+
 
 ## Installation
 

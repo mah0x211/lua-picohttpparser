@@ -32,52 +32,52 @@ luarocks install picohttpparser --from=http://mah0x211.github.io/rocks/
 
 ## Methods
 
-### req, consume = phr:parseRequest( str:string [, prevlen:number] )
+### consume = phr:parseRequest( str:string, req:table, hdr:table [, prevlen:number] )
 
 parse HTTP request.
 
 **Parameters**
 
 - `str:string`: HTTP request string.
+- `req:table`: container table for request-line items.
+- `hdr:table`: container table for headers.
 - `prevlen:number`: previous str length. `default 0`
 
 
 **Returns**
 
-1. `req:table`: request table on success, or a nil on failure.
-2. `consume:number`: number of bytes consumed on success, -1 on invalid request, -2 on request is incomplete.
+1. `consume:number`: number of bytes consumed on success, -1 on invalid request, -2 on request is incomplete.
 
 
-**Field names of request table**
+**Field names of request-line table**
 
 - `method:string`: method name.
 - `path:string`: pathname.
 - `minor_version:number`: minor version of HTTP version.
-- `header:table`: request headers.
 
 
-### res, consume = phr:parseResponse( str:string [, prevlen:number] )
+### consume = phr:parseResponse( str:string, res:table, hdr:table, [, prevlen:number] )
 
 parse HTTP response.
 
 **Parameters**
 
 - `str:string`: HTTP request string.
+- `req:table`: container table for request-line items.
+- `hdr:table`: container table for headers.
 - `prevlen:number`: previous str length. `default 0`
 
 
 **Returns**
 
-1. `res:table`: response table on success, or a nil on failure.
-2. `consume:number`: number of bytes consumed on success, -1 on invalid request, -2 on request is incomplete.
+1. `consume:number`: number of bytes consumed on success, -1 on invalid request, -2 on request is incomplete.
 
 
-**Field names of response table**
+**Field names of response-line table**
 
 - `minor_version:number`: minor version of HTTP version.
 - `status:number`: status code.
 - `message:string`: message string.
-- `header:table`: response headers.
 
 
 ## Usage
@@ -98,6 +98,9 @@ local reqstr =
     "__utmz=xxxxxxxxx.xxxxxxxxxx.x.x.utmccn=(referral)|utmcsr=reader.livedoor.com|utmcct=/reader/|utmcmd=referral\r\n" ..
     "\r\n";
 local phr = require('picohttpparser').new();
-local req, consume = phr:parseRequest( buf );
+local req = {
+	header = {}	
+};
+local consume = phr:parseRequest( buf, req, req.header );
 ```
 

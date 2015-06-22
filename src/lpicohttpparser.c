@@ -78,7 +78,7 @@ static int parse_request_lua( lua_State *L )
     lpicohttpparser_t *p = luaL_checkudata( L, 1, MODULE_MT );
     size_t len = 0;
     const char *buf = luaL_checklstring( L, 2, &len );
-    lua_Integer prevlen = luaL_optint( L, 3, 0 );
+    lua_Integer prevlen = luaL_optint( L, 5, 0 );
     size_t nhdr = p->maxhdr;
     const char *method = NULL;
     size_t mlen = 0;
@@ -87,6 +87,10 @@ static int parse_request_lua( lua_State *L )
     int minor_ver = 0;
     size_t i = 0;
     
+    // check container table
+    luaL_checktype( L, 3, LUA_TTABLE );
+    luaL_checktype( L, 4, LUA_TTABLE );
+    lua_settop( L, 4 );
     
     // returns number of bytes consumed if successful, 
     // -2 if request is partial,
@@ -94,33 +98,24 @@ static int parse_request_lua( lua_State *L )
     prevlen = phr_parse_request( buf, len, &method, &mlen, &path, &plen,
                                  &minor_ver, p->headers, &nhdr, 
                                  (size_t)prevlen );
-    switch( prevlen )
+    // successfully parsed the request
+    if( prevlen >= 0 )
     {
-        // invalid request
-        case -1:
-        // request is incomplete
-        case -2:
-            lua_pushnil( L );
-        break;
-        
-        // successfully parsed the request
-        default:
-            lua_createtable( L, 0, 4 );
-            lstate_strl2tbl( L, "method", method, mlen );
-            lstate_strl2tbl( L, "path", path, plen );
-            lstate_num2tbl( L, "minor_version", minor_ver );
-            // create header table
-            lua_pushstring( L, "header" );
-            lua_createtable( L, 0, nhdr );
-            for(; i < nhdr; i++ ){
-                lstate_strll2tbl( L, p->headers[i].name, p->headers[i].name_len,
-                                  p->headers[i].value, p->headers[i].value_len );
-            }
-            lua_rawset( L, -3 );
+        // add headers
+        for(; i < nhdr; i++ ){
+            lstate_strll2tbl( L, p->headers[i].name, p->headers[i].name_len,
+                              p->headers[i].value, p->headers[i].value_len );
+        }
+        lua_pop( L, 1 );
+        // add request-line
+        lstate_strl2tbl( L, "method", method, mlen );
+        lstate_strl2tbl( L, "path", path, plen );
+        lstate_num2tbl( L, "minor_version", minor_ver );
     }
-    
+    // add consumed bytes
     lua_pushinteger( L, prevlen );
-    return 2;
+    
+    return 1;
 }
 
 
@@ -129,7 +124,7 @@ static int parse_response_lua( lua_State *L )
     lpicohttpparser_t *p = luaL_checkudata( L, 1, MODULE_MT );
     size_t len = 0;
     const char *buf = luaL_checklstring( L, 2, &len );
-    lua_Integer prevlen = luaL_optint( L, 3, 0 );
+    lua_Integer prevlen = luaL_optint( L, 5, 0 );
     size_t nhdr = p->maxhdr;
     int minor_ver = 0;
     int status = 0;
@@ -137,38 +132,34 @@ static int parse_response_lua( lua_State *L )
     size_t mlen = 0;
     size_t i = 0;
     
+    // check container table
+    luaL_checktype( L, 3, LUA_TTABLE );
+    luaL_checktype( L, 4, LUA_TTABLE );
+    lua_settop( L, 4 );
+    
     // returns number of bytes consumed if successful, 
     // -2 if request is partial,
     // -1 if failed
     prevlen = phr_parse_response( buf, len, &minor_ver, &status, &msg, &mlen,
                                   p->headers, &nhdr, (size_t)prevlen );
-    switch( prevlen )
+    // successfully parsed the response
+    if( prevlen >= 0 )
     {
-        // invalid request
-        case -1:
-        // response is incomplete
-        case -2:
-            lua_pushnil( L );
-        break;
-        
-        // successfully parsed the request
-        default:
-            lua_createtable( L, 0, 4 );
-            lstate_num2tbl( L, "minor_version", minor_ver );
-            lstate_num2tbl( L, "status", status );
-            lstate_strl2tbl( L, "message", msg, mlen );
-            // create header table
-            lua_pushstring( L, "header" );
-            lua_createtable( L, 0, nhdr );
-            for(; i < nhdr; i++ ){
-                lstate_strll2tbl( L, p->headers[i].name, p->headers[i].name_len,
-                                  p->headers[i].value, p->headers[i].value_len );
-            }
-            lua_rawset( L, -3 );
+        // add headers
+        for(; i < nhdr; i++ ){
+            lstate_strll2tbl( L, p->headers[i].name, p->headers[i].name_len,
+                              p->headers[i].value, p->headers[i].value_len );
+        }
+        lua_pop( L, 1 );
+        // add status-line
+        lstate_num2tbl( L, "minor_version", minor_ver );
+        lstate_num2tbl( L, "status", status );
+        lstate_strl2tbl( L, "message", msg, mlen );
     }
-    
+    // add consumed bytes
     lua_pushinteger( L, prevlen );
-    return 2;
+    
+    return 1;
 }
 
 

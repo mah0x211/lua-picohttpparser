@@ -32,15 +32,15 @@ luarocks install picohttpparser --from=http://mah0x211.github.io/rocks/
 
 ## Methods
 
-### consume = phr:parseRequest( str:string, req:table, hdr:table [, prevlen:number] )
+### consume = phr:parseRequest( req:table, hdr:table, str:string [, prevlen:number] )
 
 parse HTTP request.
 
 **Parameters**
 
-- `str:string`: HTTP request string.
 - `req:table`: container table for request-line items.
 - `hdr:table`: container table for headers.
+- `str:string`: HTTP request string.
 - `prevlen:number`: previous str length. `default 0`
 
 
@@ -56,21 +56,21 @@ parse HTTP request.
 - `minor_version:number`: minor version of HTTP version.
 
 
-### consume = phr:parseResponse( str:string, res:table, hdr:table, [, prevlen:number] )
+### consume = phr:parseResponse( res:table, hdr:table, str:string [, prevlen:number] )
 
 parse HTTP response.
 
 **Parameters**
 
-- `str:string`: HTTP request string.
-- `req:table`: container table for request-line items.
+- `res:table`: container table for status-line items.
 - `hdr:table`: container table for headers.
+- `str:string`: HTTP response string.
 - `prevlen:number`: previous str length. `default 0`
 
 
 **Returns**
 
-1. `consume:number`: number of bytes consumed on success, -1 on invalid request, -2 on request is incomplete.
+1. `consume:number`: number of bytes consumed on success, -1 on invalid response, -2 on response is incomplete.
 
 
 **Field names of response-line table**
@@ -101,6 +101,6 @@ local phr = require('picohttpparser').new();
 local req = {
 	header = {}	
 };
-local consume = phr:parseRequest( buf, req, req.header );
+local consume = phr:parseRequest( req, req.header, buf );
 ```
 

@@ -77,7 +77,7 @@ static int parse_request_lua( lua_State *L )
 {
     lpicohttpparser_t *p = luaL_checkudata( L, 1, MODULE_MT );
     size_t len = 0;
-    const char *buf = luaL_checklstring( L, 2, &len );
+    const char *buf = luaL_checklstring( L, 4, &len );
     lua_Integer prevlen = luaL_optint( L, 5, 0 );
     size_t nhdr = p->maxhdr;
     const char *method = NULL;
@@ -88,9 +88,8 @@ static int parse_request_lua( lua_State *L )
     size_t i = 0;
     
     // check container table
+    luaL_checktype( L, 2, LUA_TTABLE );
     luaL_checktype( L, 3, LUA_TTABLE );
-    luaL_checktype( L, 4, LUA_TTABLE );
-    lua_settop( L, 4 );
     
     // returns number of bytes consumed if successful, 
     // -2 if request is partial,
@@ -101,6 +100,8 @@ static int parse_request_lua( lua_State *L )
     // successfully parsed the request
     if( prevlen >= 0 )
     {
+        // export to table
+        lua_settop( L, 3 );
         // add headers
         for(; i < nhdr; i++ ){
             lstate_strll2tbl( L, p->headers[i].name, p->headers[i].name_len,
@@ -123,7 +124,7 @@ static int parse_response_lua( lua_State *L )
 {
     lpicohttpparser_t *p = luaL_checkudata( L, 1, MODULE_MT );
     size_t len = 0;
-    const char *buf = luaL_checklstring( L, 2, &len );
+    const char *buf = luaL_checklstring( L, 4, &len );
     lua_Integer prevlen = luaL_optint( L, 5, 0 );
     size_t nhdr = p->maxhdr;
     int minor_ver = 0;
@@ -133,9 +134,8 @@ static int parse_response_lua( lua_State *L )
     size_t i = 0;
     
     // check container table
+    luaL_checktype( L, 2, LUA_TTABLE );
     luaL_checktype( L, 3, LUA_TTABLE );
-    luaL_checktype( L, 4, LUA_TTABLE );
-    lua_settop( L, 4 );
     
     // returns number of bytes consumed if successful, 
     // -2 if request is partial,
@@ -145,6 +145,8 @@ static int parse_response_lua( lua_State *L )
     // successfully parsed the response
     if( prevlen >= 0 )
     {
+        // export to table
+        lua_settop( L, 3 );
         // add headers
         for(; i < nhdr; i++ ){
             lstate_strll2tbl( L, p->headers[i].name, p->headers[i].name_len,

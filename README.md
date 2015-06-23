@@ -101,6 +101,6 @@ local phr = require('picohttpparser').new();
 local req = {
 	header = {}	
 };
-local consume = phr:parseRequest( req, req.header, buf );
+local consume = phr:parseRequest( req, req.header, reqstr );
 ```
 

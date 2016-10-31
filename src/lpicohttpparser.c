@@ -1,11 +1,11 @@
 /*
  *  Copyright 2015 Masatoshi Teruya. All rights reserved.
  *
- *  Permission is hereby granted, free of charge, to any person obtaining a 
- *  copy of this software and associated documentation files (the "Software"), 
- *  to deal in the Software without restriction, including without limitation 
- *  the rights to use, copy, modify, merge, publish, distribute, sublicense, 
- *  and/or sell copies of the Software, and to permit persons to whom the 
+ *  Permission is hereby granted, free of charge, to any person obtaining a
+ *  copy of this software and associated documentation files (the "Software"),
+ *  to deal in the Software without restriction, including without limitation
+ *  the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ *  and/or sell copies of the Software, and to permit persons to whom the
  *  Software is furnished to do so, subject to the following conditions:
  *
  *  The above copyright notice and this permission notice shall be included in
@@ -13,10 +13,10 @@
  *
  *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL 
+ *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
  *  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
- *  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER 
+ *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ *  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  *  DEALINGS IN THE SOFTWARE.
  *
  *  lpicohttpparser.c
@@ -210,7 +210,7 @@ static int parse_response_lua( lua_State *L )
     }
     // add consumed bytes
     lua_pushinteger( L, prevlen );
-    
+
     return 1;
 }
 
@@ -233,7 +233,7 @@ static int new_lua( lua_State *L )
 {
     int maxhdr = luaL_optint( L, 1, DEFAULT_MAX_HDR );
     lpicohttpparser_t *p = NULL;
-    
+
     if( maxhdr > UINT8_MAX ){
         return luaL_argerror( L, 1, "maxhdr must be less than UINT8_MAX" );
     }
@@ -244,11 +244,11 @@ static int new_lua( lua_State *L )
         lua_setmetatable( L, -2 );
         return 1;
     }
-    
+
     // got error
     lua_pushnil( L );
     lua_pushstring( L, strerror( errno ) );
-    
+
     return 2;
 }
 
@@ -267,7 +267,7 @@ LUALIB_API int luaopen_picohttpparser( lua_State *L )
         { NULL, NULL }
     };
     struct luaL_Reg *ptr = mmethods;
-    
+
     // create metatable
     luaL_newmetatable( L, MODULE_MT );
     // metamethods
@@ -286,8 +286,8 @@ LUALIB_API int luaopen_picohttpparser( lua_State *L )
     lua_rawset( L, -3 );
     // remove metatable from stack
     lua_pop( L, 1 );
-    
-    
+
+
     // register allocator
     lua_createtable( L, 0, 1 );
     lstate_fn2tbl( L, "new", new_lua );

@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <ctype.h>
 #include <lua.h>
 #include <lauxlib.h>
 #include "picohttpparser.h"
@@ -67,6 +68,15 @@
 }while(0)
 
 
+// convert uppercase to lowercase
+#define upper2lower( str, len ) do { \
+    size_t n = 0; \
+    for( n = 0; n < (len); n++ ){ \
+        ((char*)(str))[n] = tolower( (str)[n] ); \
+    } \
+}while(0)
+
+
 typedef struct {
     struct phr_header *headers;
     uint8_t maxhdr;
@@ -79,35 +89,56 @@ static int parse_request_lua( lua_State *L )
     size_t len = 0;
     const char *buf = luaL_checklstring( L, 4, &len );
     lua_Integer prevlen = luaL_optint( L, 5, 0 );
+    lua_Integer tolowercase = 0;
     size_t nhdr = p->maxhdr;
     const char *method = NULL;
     size_t mlen = 0;
     const char *path = NULL;
     size_t plen = 0;
     int minor_ver = 0;
-    size_t i = 0;
-    
+
     // check container table
     luaL_checktype( L, 2, LUA_TTABLE );
     luaL_checktype( L, 3, LUA_TTABLE );
-    
-    // returns number of bytes consumed if successful, 
-    // -2 if request is partial,
+    if( lua_gettop( L ) > 5 ){
+        luaL_checktype( L, 6, LUA_TBOOLEAN );
+        tolowercase = lua_toboolean( L, 6 );
+    }
+
+    // returns number of bytes consumed if successful
+    // -2 if request is partial
     // -1 if failed
     prevlen = phr_parse_request( buf, len, &method, &mlen, &path, &plen,
-                                 &minor_ver, p->headers, &nhdr, 
+                                 &minor_ver, p->headers, &nhdr,
                                  (size_t)prevlen );
     // successfully parsed the request
     if( prevlen >= 0 )
     {
+        size_t i = 0;
+
         // export to table
         lua_settop( L, 3 );
+
         // add headers
-        for(; i < nhdr; i++ ){
-            lstate_strll2tbl( L, p->headers[i].name, p->headers[i].name_len,
-                              p->headers[i].value, p->headers[i].value_len );
+        if( tolowercase )
+        {
+            for(; i < nhdr; i++ ){
+                // convert header-name to lowercase
+                upper2lower( p->headers[i].name, p->headers[i].name_len );
+                lstate_strll2tbl( L, p->headers[i].name, p->headers[i].name_len,
+                                  p->headers[i].value, p->headers[i].value_len );
+            }
+        }
+        else
+        {
+            // add headers
+            for(; i < nhdr; i++ ){
+                lstate_strll2tbl( L, p->headers[i].name, p->headers[i].name_len,
+                                  p->headers[i].value, p->headers[i].value_len );
+            }
         }
         lua_pop( L, 1 );
+
         // add request-line
         lstate_strl2tbl( L, "method", method, mlen );
         lstate_strl2tbl( L, "path", path, plen );
@@ -115,7 +146,7 @@ static int parse_request_lua( lua_State *L )
     }
     // add consumed bytes
     lua_pushinteger( L, prevlen );
-    
+
     return 1;
 }
 
@@ -126,33 +157,52 @@ static int parse_response_lua( lua_State *L )
     size_t len = 0;
     const char *buf = luaL_checklstring( L, 4, &len );
     lua_Integer prevlen = luaL_optint( L, 5, 0 );
+    lua_Integer tolowercase = 0;
     size_t nhdr = p->maxhdr;
     int minor_ver = 0;
     int status = 0;
     const char *msg = NULL;
     size_t mlen = 0;
-    size_t i = 0;
-    
+
     // check container table
     luaL_checktype( L, 2, LUA_TTABLE );
     luaL_checktype( L, 3, LUA_TTABLE );
-    
-    // returns number of bytes consumed if successful, 
-    // -2 if request is partial,
+    if( lua_gettop( L ) > 5 ){
+        luaL_checktype( L, 6, LUA_TBOOLEAN );
+        tolowercase = lua_toboolean( L, 6 );
+    }
+
+    // returns number of bytes consumed if successful
+    // -2 if request is partial
     // -1 if failed
     prevlen = phr_parse_response( buf, len, &minor_ver, &status, &msg, &mlen,
                                   p->headers, &nhdr, (size_t)prevlen );
     // successfully parsed the response
     if( prevlen >= 0 )
     {
+        size_t i = 0;
+
         // export to table
         lua_settop( L, 3 );
         // add headers
-        for(; i < nhdr; i++ ){
-            lstate_strll2tbl( L, p->headers[i].name, p->headers[i].name_len,
-                              p->headers[i].value, p->headers[i].value_len );
+        if( tolowercase )
+        {
+            for(; i < nhdr; i++ ){
+                // convert header-name to lowercase
+                upper2lower( p->headers[i].name, p->headers[i].name_len );
+                lstate_strll2tbl( L, p->headers[i].name, p->headers[i].name_len,
+                                  p->headers[i].value, p->headers[i].value_len );
+            }
+        }
+        else
+        {
+            for(; i < nhdr; i++ ){
+                lstate_strll2tbl( L, p->headers[i].name, p->headers[i].name_len,
+                                  p->headers[i].value, p->headers[i].value_len );
+            }
         }
         lua_pop( L, 1 );
+
         // add status-line
         lstate_num2tbl( L, "minor_version", minor_ver );
         lstate_num2tbl( L, "status", status );

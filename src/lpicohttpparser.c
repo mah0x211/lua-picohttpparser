@@ -30,6 +30,7 @@
 #include <string.h>
 #include <errno.h>
 #include <ctype.h>
+#include <stdint.h>
 #include <lua.h>
 #include <lauxlib.h>
 #include "picohttpparser.h"

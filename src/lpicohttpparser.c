@@ -238,8 +238,10 @@ static int new_lua( lua_State *L )
     if( maxhdr > UINT8_MAX ){
         return luaL_argerror( L, 1, "maxhdr must be less than UINT8_MAX" );
     }
-    else if( ( p = lua_newuserdata( L, sizeof( lpicohttpparser_t ) ) ) &&
-             ( p->headers = calloc( maxhdr, sizeof( struct phr_header ) ) ) ){
+
+    p = lua_newuserdata( L, sizeof( lpicohttpparser_t ) );
+    p->headers = calloc( maxhdr, sizeof( struct phr_header ) );
+    if( p->headers ){
         p->maxhdr = maxhdr;
         luaL_getmetatable( L, MODULE_MT );
         lua_setmetatable( L, -2 );

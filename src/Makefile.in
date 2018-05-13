@@ -1,6 +1,6 @@
 CC=@CC@
 CFLAGS=@CFLAGS@ -Wall -Wno-trigraphs -Wmissing-field-initializers -Wmissing-prototypes -Wreturn-type -Wmissing-braces -Wparentheses -Wswitch -Wunused-function -Wunused-label -Wunused-parameter -Wunused-variable -Wunused-value -Wuninitialized -Wunknown-pragmas -Wshadow -Wsign-compare
-CPPFLAGS=-I. -I../deps/picohttpparser/ -I./@LPICOHTTPPARSER_SRC@ @CPPFLAGS@
+CPPFLAGS=-I. -I../deps/picohttpparser/ -I../deps/lauxhlib/ -I./@LPICOHTTPPARSER_SRC@ @CPPFLAGS@
 LDFLAGS=@LIBFLAG@
 LIBS=@LIBS@
 TARGET=@PACKAGE@.@LIB_EXTENSION@
@@ -15,7 +15,7 @@ all: $(OBJ) $(TARGET)
 %.o: %.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $^
 
-$(TARGET): 
+$(TARGET):
 	$(CC) $(LDFLAGS) $(LIBS) -o $@ *.o
 
 install:

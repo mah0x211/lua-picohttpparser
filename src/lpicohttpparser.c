@@ -31,9 +31,8 @@
 #include <errno.h>
 #include <ctype.h>
 #include <stdint.h>
-#include <lua.h>
-#include <lauxlib.h>
 #include "picohttpparser.h"
+#include "lauxhlib.h"
 
 
 #define MODULE_MT   "picohttpparser"
@@ -41,40 +40,19 @@
 #define DEFAULT_MAX_HDR     20
 
 // helper macros
-#define lstate_fn2tbl(L,k,v) do{ \
-    lua_pushstring(L,k); \
-    lua_pushcfunction(L,v); \
-    lua_rawset(L,-3); \
-}while(0)
-
-
-#define lstate_num2tbl(L,k,v) do{ \
-    lua_pushstring(L,k); \
-    lua_pushnumber(L,v); \
-    lua_rawset(L,-3); \
-}while(0)
-
-
-#define lstate_strl2tbl(L,k,v,vl) do{ \
-    lua_pushstring(L,k); \
-    lua_pushlstring(L,v,vl); \
-    lua_rawset(L,-3); \
-}while(0)
-
-
-#define lstate_strll2tbl(L,k,kl,v,vl) do{ \
-    lua_pushlstring(L,k,kl); \
-    lua_pushlstring(L,v,vl); \
-    lua_rawset(L,-3); \
+#define lstate_strll2tbl(L,k,kl,v,vl) do{   \
+    lua_pushlstring(L,k,kl);                \
+    lua_pushlstring(L,v,vl);                \
+    lua_rawset(L,-3);                       \
 }while(0)
 
 
 // convert uppercase to lowercase
-#define upper2lower( str, len ) do { \
-    size_t n = 0; \
-    for( n = 0; n < (len); n++ ){ \
-        ((char*)(str))[n] = tolower( (str)[n] ); \
-    } \
+#define upper2lower( str, len ) do {                \
+    size_t n = 0;                                   \
+    for( n = 0; n < (len); n++ ){                   \
+        ((char*)(str))[n] = tolower( (str)[n] );    \
+    }                                               \
 }while(0)
 
 
@@ -141,9 +119,9 @@ static int parse_request_lua( lua_State *L )
         lua_pop( L, 1 );
 
         // add request-line
-        lstate_strl2tbl( L, "method", method, mlen );
-        lstate_strl2tbl( L, "path", path, plen );
-        lstate_num2tbl( L, "minor_version", minor_ver );
+        lauxh_pushlstr2tbl( L, "method", method, mlen );
+        lauxh_pushlstr2tbl( L, "path", path, plen );
+        lauxh_pushnum2tbl( L, "minor_version", minor_ver );
     }
     // add consumed bytes
     lua_pushinteger( L, prevlen );
@@ -205,9 +183,9 @@ static int parse_response_lua( lua_State *L )
         lua_pop( L, 1 );
 
         // add status-line
-        lstate_num2tbl( L, "minor_version", minor_ver );
-        lstate_num2tbl( L, "status", status );
-        lstate_strl2tbl( L, "message", msg, mlen );
+        lauxh_pushnum2tbl( L, "minor_version", minor_ver );
+        lauxh_pushnum2tbl( L, "status", status );
+        lauxh_pushlstr2tbl( L, "message", msg, mlen );
     }
     // add consumed bytes
     lua_pushinteger( L, prevlen );
@@ -275,7 +253,7 @@ LUALIB_API int luaopen_picohttpparser( lua_State *L )
     luaL_newmetatable( L, MODULE_MT );
     // metamethods
     do {
-        lstate_fn2tbl( L, ptr->name, ptr->func );
+        lauxh_pushfn2tbl( L, ptr->name, ptr->func );
         ptr++;
     } while( ptr->name );
     // methods
@@ -283,7 +261,7 @@ LUALIB_API int luaopen_picohttpparser( lua_State *L )
     lua_pushstring( L, "__index" );
     lua_newtable( L );
     do {
-        lstate_fn2tbl( L, ptr->name, ptr->func );
+        lauxh_pushfn2tbl( L, ptr->name, ptr->func );
         ptr++;
     } while( ptr->name );
     lua_rawset( L, -3 );
@@ -293,7 +271,7 @@ LUALIB_API int luaopen_picohttpparser( lua_State *L )
 
     // register allocator
     lua_createtable( L, 0, 1 );
-    lstate_fn2tbl( L, "new", new_lua );
+    lauxh_pushfn2tbl( L, "new", new_lua );
 
     return 1;
 }

@@ -1,8 +1,9 @@
 rockspec_format = "3.0"
 package = "picohttpparser"
-version = "scm-1"
+version = "1.1.3-2"
 source = {
-    url = "git+https://github.com/mah0x211/lua-picohttpparser.git"
+    url = "git+https://github.com/mah0x211/lua-picohttpparser.git",
+    tag = "v1.1.3"
 }
 description = {
     summary = "picohttpparser for lua",

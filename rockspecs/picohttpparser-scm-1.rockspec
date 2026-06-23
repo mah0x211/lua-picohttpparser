@@ -2,23 +2,41 @@ rockspec_format = "3.0"
 package = "picohttpparser"
 version = "scm-1"
 source = {
-    url = "git+https://github.com/mah0x211/lua-picohttpparser.git"
+    url = "git+https://github.com/mah0x211/lua-picohttpparser.git",
 }
 description = {
     summary = "picohttpparser for lua",
     homepage = "https://github.com/mah0x211/lua-picohttpparser",
     license = "MIT/X11",
-    maintainer = "Masatoshi Fukunaga"
+    maintainer = "Masatoshi Fukunaga",
 }
 dependencies = {
     "lua >= 5.1",
 }
-build = {
-    type = "command",
-    build_command = [[
-        autoreconf -ivf && CFLAGS="$(CFLAGS)" CPPFLAGS="-I$(LUA_INCDIR)" LIBFLAG="$(LIBFLAG)" OBJ_EXTENSION="$(OBJ_EXTENSION)" LIB_EXTENSION="$(LIB_EXTENSION)" LIBDIR="$(LIBDIR)" ./configure && make clean && make
-    ]],
-    install_command = "make install"
+build_dependencies = {
+    "luarocks-build-hooks >= 0.8.0",
 }
-
-
+build = {
+    type = "hooks",
+    before_build = "$(extra-vars)",
+    extra_variables = {
+        CFLAGS = "-Wall -Wno-trigraphs -Wmissing-field-initializers -Wreturn-type -Wmissing-braces -Wparentheses -Wno-switch -Wunused-function -Wunused-label -Wunused-parameter -Wunused-variable -Wunused-value -Wuninitialized -Wunknown-pragmas -Wshadow -Wsign-compare",
+    },
+    conditional_variables = {
+        PICOHTTPPARSER_COVERAGE = {
+            CFLAGS = "--coverage",
+            LIBFLAG = "--coverage",
+        },
+    },
+    modules = {
+        ["picohttpparser"] = {
+            sources = {
+                "src/lpicohttpparser.c",
+                "deps/picohttpparser/picohttpparser.c",
+            },
+            incdirs = {
+                "deps/picohttpparser",
+            },
+        },
+    },
+}

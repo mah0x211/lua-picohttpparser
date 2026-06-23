@@ -1,5 +1,8 @@
 # lua-picohttpparser
 
+[![test](https://github.com/mah0x211/lua-picohttpparser/actions/workflows/test.yml/badge.svg)](https://github.com/mah0x211/lua-picohttpparser/actions/workflows/test.yml)
+[![codecov](https://codecov.io/gh/mah0x211/lua-picohttpparser/branch/master/graph/badge.svg)](https://codecov.io/gh/mah0x211/lua-picohttpparser)
+
 picohttpparser module for lua.
 
 ## Dependencies

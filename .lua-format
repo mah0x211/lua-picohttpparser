@@ -1,0 +1,6 @@
+keep_simple_control_block_one_line: false
+keep_simple_function_one_line: false
+extra_sep_at_table_end: true
+break_after_table_lb: true
+break_before_table_rb: false
+double_quote_to_single_quote: true

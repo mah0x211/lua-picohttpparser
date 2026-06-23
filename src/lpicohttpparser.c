@@ -45,6 +45,12 @@
 
 #define DEFAULT_MAX_HDR     20
 
+#if (LUA_VERSION_NUM > 501)
+#    define arrlen( L, idx ) lua_rawlen( L, idx )
+#else
+#    define arrlen( L, idx ) lua_objlen( L, idx )
+#endif
+
 // helper macros
 #define lstate_strll2tbl(L,k,kl,v,vl) do{   \
     lua_pushlstring(L,k,kl);                \
@@ -128,16 +134,83 @@ static int parse_request_lua( lua_State *L )
             for(; i < nhdr; i++ ){
                 // convert header-name to lowercase
                 upper2lower( p->headers[i].name, p->headers[i].name_len );
-                lstate_strll2tbl( L, p->headers[i].name, p->headers[i].name_len,
-                                  p->headers[i].value, p->headers[i].value_len );
+
+                lua_pushlstring( L, p->headers[i].name, p->headers[i].name_len );
+                lua_rawget( L, -2 );
+                switch( lua_type( L, -1 ) )
+                {
+                    case LUA_TNIL:
+                        lua_pop( L, 1 );
+                        lstate_strll2tbl(
+                            L, p->headers[i].name, p->headers[i].name_len,
+                            p->headers[i].value, p->headers[i].value_len );
+                        break;
+
+                    case LUA_TSTRING:
+                        lua_pushlstring( L, p->headers[i].name,
+                                        p->headers[i].name_len );
+                        lua_createtable( L, 3, 0 );
+                        // set existing value to table
+                        lua_pushvalue( L, -3 );
+                        lua_rawseti( L, -2, 1 );
+                        // set value to table
+                        lua_pushlstring( L, p->headers[i].value,
+                                        p->headers[i].value_len );
+                        lua_rawseti( L, -2, 2 );
+                        // replace existing value to table
+                        lua_rawset( L, -4 );
+                        lua_pop( L, 1 );
+                        break;
+
+                    case LUA_TTABLE:
+                        // set value to table
+                        lua_pushlstring( L, p->headers[i].value,
+                                        p->headers[i].value_len );
+                        lua_rawseti( L, -2, arrlen( L, -2 ) + 1 );
+                        lua_pop( L, 1 );
+                        break;
+                }
             }
         }
         else
         {
             // add headers
             for(; i < nhdr; i++ ){
-                lstate_strll2tbl( L, p->headers[i].name, p->headers[i].name_len,
-                                  p->headers[i].value, p->headers[i].value_len );
+                lua_pushlstring( L, p->headers[i].name, p->headers[i].name_len );
+                lua_rawget( L, -2 );
+                switch( lua_type( L, -1 ) )
+                {
+                    case LUA_TNIL:
+                        lua_pop( L, 1 );
+                        lstate_strll2tbl(
+                            L, p->headers[i].name, p->headers[i].name_len,
+                            p->headers[i].value, p->headers[i].value_len );
+                        break;
+
+                    case LUA_TSTRING:
+                        lua_pushlstring( L, p->headers[i].name,
+                                        p->headers[i].name_len );
+                        lua_createtable( L, 3, 0 );
+                        // set existing value to table
+                        lua_pushvalue( L, -3 );
+                        lua_rawseti( L, -2, 1 );
+                        // set value to table
+                        lua_pushlstring( L, p->headers[i].value,
+                                        p->headers[i].value_len );
+                        lua_rawseti( L, -2, 2 );
+                        // replace existing value to table
+                        lua_rawset( L, -4 );
+                        lua_pop( L, 1 );
+                        break;
+
+                    case LUA_TTABLE:
+                        // set value to table
+                        lua_pushlstring( L, p->headers[i].value,
+                                        p->headers[i].value_len );
+                        lua_rawseti( L, -2, arrlen( L, -2 ) + 1 );
+                        lua_pop( L, 1 );
+                        break;
+                }
             }
         }
         lua_pop( L, 1 );
@@ -193,15 +266,82 @@ static int parse_response_lua( lua_State *L )
             for(; i < nhdr; i++ ){
                 // convert header-name to lowercase
                 upper2lower( p->headers[i].name, p->headers[i].name_len );
-                lstate_strll2tbl( L, p->headers[i].name, p->headers[i].name_len,
-                                  p->headers[i].value, p->headers[i].value_len );
+
+                lua_pushlstring( L, p->headers[i].name, p->headers[i].name_len );
+                lua_rawget( L, -2 );
+                switch( lua_type( L, -1 ) )
+                {
+                    case LUA_TNIL:
+                        lua_pop( L, 1 );
+                        lstate_strll2tbl(
+                            L, p->headers[i].name, p->headers[i].name_len,
+                            p->headers[i].value, p->headers[i].value_len );
+                        break;
+
+                    case LUA_TSTRING:
+                        lua_pushlstring( L, p->headers[i].name,
+                                        p->headers[i].name_len );
+                        lua_createtable( L, 3, 0 );
+                        // set existing value to table
+                        lua_pushvalue( L, -3 );
+                        lua_rawseti( L, -2, 1 );
+                        // set value to table
+                        lua_pushlstring( L, p->headers[i].value,
+                                        p->headers[i].value_len );
+                        lua_rawseti( L, -2, 2 );
+                        // replace existing value to table
+                        lua_rawset( L, -4 );
+                        lua_pop( L, 1 );
+                        break;
+
+                    case LUA_TTABLE:
+                        // set value to table
+                        lua_pushlstring( L, p->headers[i].value,
+                                        p->headers[i].value_len );
+                        lua_rawseti( L, -2, arrlen( L, -2 ) + 1 );
+                        lua_pop( L, 1 );
+                        break;
+                }
             }
         }
         else
         {
             for(; i < nhdr; i++ ){
-                lstate_strll2tbl( L, p->headers[i].name, p->headers[i].name_len,
-                                  p->headers[i].value, p->headers[i].value_len );
+                lua_pushlstring( L, p->headers[i].name, p->headers[i].name_len );
+                lua_rawget( L, -2 );
+                switch( lua_type( L, -1 ) )
+                {
+                    case LUA_TNIL:
+                        lua_pop( L, 1 );
+                        lstate_strll2tbl(
+                            L, p->headers[i].name, p->headers[i].name_len,
+                            p->headers[i].value, p->headers[i].value_len );
+                        break;
+
+                    case LUA_TSTRING:
+                        lua_pushlstring( L, p->headers[i].name,
+                                        p->headers[i].name_len );
+                        lua_createtable( L, 3, 0 );
+                        // set existing value to table
+                        lua_pushvalue( L, -3 );
+                        lua_rawseti( L, -2, 1 );
+                        // set value to table
+                        lua_pushlstring( L, p->headers[i].value,
+                                        p->headers[i].value_len );
+                        lua_rawseti( L, -2, 2 );
+                        // replace existing value to table
+                        lua_rawset( L, -4 );
+                        lua_pop( L, 1 );
+                        break;
+
+                    case LUA_TTABLE:
+                        // set value to table
+                        lua_pushlstring( L, p->headers[i].value,
+                                        p->headers[i].value_len );
+                        lua_rawseti( L, -2, arrlen( L, -2 ) + 1 );
+                        lua_pop( L, 1 );
+                        break;
+                }
             }
         }
         lua_pop( L, 1 );

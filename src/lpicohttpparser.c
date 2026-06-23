@@ -26,13 +26,19 @@
  *
  */
 
+// depend
+#include "picohttpparser.h"
+
+// lua
+#include <lauxlib.h>
+#include <lualib.h>
+
+// system
+#include <ctype.h>
+#include <errno.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
-#include <ctype.h>
-#include <stdint.h>
-#include "picohttpparser.h"
-#include "lauxhlib.h"
 
 
 #define MODULE_MT   "picohttpparser"
@@ -43,6 +49,24 @@
 #define lstate_strll2tbl(L,k,kl,v,vl) do{   \
     lua_pushlstring(L,k,kl);                \
     lua_pushlstring(L,v,vl);                \
+    lua_rawset(L,-3);                       \
+}while(0)
+
+#define lstate_str2tbl(L,k,v,vl) do{        \
+    lua_pushstring(L,k);                    \
+    lua_pushlstring(L,v,vl);                \
+    lua_rawset(L,-3);                       \
+}while(0)
+
+#define lstate_num2tbl(L,k,n) do{           \
+    lua_pushstring(L,k);                    \
+    lua_pushnumber(L,n);                    \
+    lua_rawset(L,-3);                       \
+}while(0)
+
+#define lstate_fn2tbl(L,k,fn) do{           \
+    lua_pushstring(L,k);                    \
+    lua_pushcfunction(L,fn);                \
     lua_rawset(L,-3);                       \
 }while(0)
 
@@ -67,7 +91,7 @@ static int parse_request_lua( lua_State *L )
     lpicohttpparser_t *p = luaL_checkudata( L, 1, MODULE_MT );
     size_t len = 0;
     const char *buf = luaL_checklstring( L, 4, &len );
-    lua_Integer prevlen = luaL_optint( L, 5, 0 );
+    lua_Integer prevlen = luaL_optinteger( L, 5, 0 );
     lua_Integer tolowercase = 0;
     size_t nhdr = p->maxhdr;
     const char *method = NULL;
@@ -119,9 +143,9 @@ static int parse_request_lua( lua_State *L )
         lua_pop( L, 1 );
 
         // add request-line
-        lauxh_pushlstr2tbl( L, "method", method, mlen );
-        lauxh_pushlstr2tbl( L, "path", path, plen );
-        lauxh_pushnum2tbl( L, "minor_version", minor_ver );
+        lstate_str2tbl( L, "method", method, mlen );
+        lstate_str2tbl( L, "path", path, plen );
+        lstate_num2tbl( L, "minor_version", minor_ver );
     }
     // add consumed bytes
     lua_pushinteger( L, prevlen );
@@ -135,7 +159,7 @@ static int parse_response_lua( lua_State *L )
     lpicohttpparser_t *p = luaL_checkudata( L, 1, MODULE_MT );
     size_t len = 0;
     const char *buf = luaL_checklstring( L, 4, &len );
-    lua_Integer prevlen = luaL_optint( L, 5, 0 );
+    lua_Integer prevlen = luaL_optinteger( L, 5, 0 );
     lua_Integer tolowercase = 0;
     size_t nhdr = p->maxhdr;
     int minor_ver = 0;
@@ -183,9 +207,9 @@ static int parse_response_lua( lua_State *L )
         lua_pop( L, 1 );
 
         // add status-line
-        lauxh_pushnum2tbl( L, "minor_version", minor_ver );
-        lauxh_pushnum2tbl( L, "status", status );
-        lauxh_pushlstr2tbl( L, "message", msg, mlen );
+        lstate_num2tbl( L, "minor_version", minor_ver );
+        lstate_num2tbl( L, "status", status );
+        lstate_str2tbl( L, "message", msg, mlen );
     }
     // add consumed bytes
     lua_pushinteger( L, prevlen );
@@ -210,7 +234,7 @@ static int gc_lua( lua_State *L )
 
 static int new_lua( lua_State *L )
 {
-    int maxhdr = luaL_optint( L, 1, DEFAULT_MAX_HDR );
+    int maxhdr = (int)luaL_optinteger( L, 1, DEFAULT_MAX_HDR );
     lpicohttpparser_t *p = NULL;
 
     if( maxhdr > UINT8_MAX ){
@@ -253,7 +277,7 @@ LUALIB_API int luaopen_picohttpparser( lua_State *L )
     luaL_newmetatable( L, MODULE_MT );
     // metamethods
     do {
-        lauxh_pushfn2tbl( L, ptr->name, ptr->func );
+        lstate_fn2tbl( L, ptr->name, ptr->func );
         ptr++;
     } while( ptr->name );
     // methods
@@ -261,7 +285,7 @@ LUALIB_API int luaopen_picohttpparser( lua_State *L )
     lua_pushstring( L, "__index" );
     lua_newtable( L );
     do {
-        lauxh_pushfn2tbl( L, ptr->name, ptr->func );
+        lstate_fn2tbl( L, ptr->name, ptr->func );
         ptr++;
     } while( ptr->name );
     lua_rawset( L, -3 );
@@ -271,7 +295,7 @@ LUALIB_API int luaopen_picohttpparser( lua_State *L )
 
     // register allocator
     lua_createtable( L, 0, 1 );
-    lauxh_pushfn2tbl( L, "new", new_lua );
+    lstate_fn2tbl( L, "new", new_lua );
 
     return 1;
 }

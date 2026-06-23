@@ -117,7 +117,8 @@ function testcase.parse_request_appends_third_duplicate_to_array()
     local phr = new_parser()
     local req = {}
     local hdr = {}
-    local body = 'GET / HTTP/1.1\r\nX-Custom: one\r\nX-Custom: two\r\nX-Custom: three\r\n\r\n'
+    local body =
+        'GET / HTTP/1.1\r\nX-Custom: one\r\nX-Custom: two\r\nX-Custom: three\r\n\r\n'
     phr:parseRequest(req, hdr, body)
     assert.equal(#hdr['X-Custom'], 3)
     assert.equal(hdr['X-Custom'][3], 'three')
@@ -159,7 +160,8 @@ function testcase.parse_request_appends_third_duplicate_when_lowercasing()
     local phr = new_parser()
     local req = {}
     local hdr = {}
-    local body = 'GET / HTTP/1.1\r\nX-Custom: one\r\nX-Custom: two\r\nX-Custom: three\r\n\r\n'
+    local body =
+        'GET / HTTP/1.1\r\nX-Custom: one\r\nX-Custom: two\r\nX-Custom: three\r\n\r\n'
     phr:parseRequest(req, hdr, body, 0, true)
     assert.equal(#hdr['x-custom'], 3)
     assert.equal(hdr['x-custom'][3], 'three')
@@ -180,7 +182,8 @@ function testcase.parse_response_appends_third_duplicate_to_array()
     local phr = new_parser()
     local res = {}
     local hdr = {}
-    local body = 'HTTP/1.1 200 OK\r\nSet-Cookie: a=1\r\nSet-Cookie: b=2\r\nSet-Cookie: c=3\r\n\r\n'
+    local body =
+        'HTTP/1.1 200 OK\r\nSet-Cookie: a=1\r\nSet-Cookie: b=2\r\nSet-Cookie: c=3\r\n\r\n'
     phr:parseResponse(res, hdr, body)
     assert.equal(#hdr['Set-Cookie'], 3)
     assert.equal(hdr['Set-Cookie'][3], 'c=3')
@@ -190,7 +193,8 @@ function testcase.parse_response_appends_third_duplicate_when_lowercasing()
     local phr = new_parser()
     local res = {}
     local hdr = {}
-    local body = 'HTTP/1.1 200 OK\r\nSet-Cookie: a=1\r\nSet-Cookie: b=2\r\nSet-Cookie: c=3\r\n\r\n'
+    local body =
+        'HTTP/1.1 200 OK\r\nSet-Cookie: a=1\r\nSet-Cookie: b=2\r\nSet-Cookie: c=3\r\n\r\n'
     phr:parseResponse(res, hdr, body, 0, true)
     assert.equal(#hdr['set-cookie'], 3)
     assert.equal(hdr['set-cookie'][3], 'c=3')

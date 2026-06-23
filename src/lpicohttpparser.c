@@ -40,64 +40,69 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define MODULE_MT "picohttpparser"
 
-#define MODULE_MT   "picohttpparser"
-
-#define DEFAULT_MAX_HDR     20
+#define DEFAULT_MAX_HDR 20
 
 #if (LUA_VERSION_NUM > 501)
-#    define arrlen( L, idx ) lua_rawlen( L, idx )
+#    define arrlen(L, idx) lua_rawlen(L, idx)
 #else
-#    define arrlen( L, idx ) lua_objlen( L, idx )
+#    define arrlen(L, idx) lua_objlen(L, idx)
 #endif
 
 // helper macros
-#define lstate_strll2tbl(L,k,kl,v,vl) do{   \
-    lua_pushlstring(L,k,kl);                \
-    lua_pushlstring(L,v,vl);                \
-    lua_rawset(L,-3);                       \
-}while(0)
+#define lstate_strll2tbl(L, k, kl, v, vl)                                      \
+    do {                                                                       \
+        lua_pushlstring(L, k, kl);                                             \
+        lua_pushlstring(L, v, vl);                                             \
+        lua_rawset(L, -3);                                                     \
+    }                                                                          \
+    while (0)
 
-#define lstate_str2tbl(L,k,v,vl) do{        \
-    lua_pushstring(L,k);                    \
-    lua_pushlstring(L,v,vl);                \
-    lua_rawset(L,-3);                       \
-}while(0)
+#define lstate_str2tbl(L, k, v, vl)                                            \
+    do {                                                                       \
+        lua_pushstring(L, k);                                                  \
+        lua_pushlstring(L, v, vl);                                             \
+        lua_rawset(L, -3);                                                     \
+    }                                                                          \
+    while (0)
 
-#define lstate_num2tbl(L,k,n) do{           \
-    lua_pushstring(L,k);                    \
-    lua_pushnumber(L,n);                    \
-    lua_rawset(L,-3);                       \
-}while(0)
+#define lstate_num2tbl(L, k, n)                                                \
+    do {                                                                       \
+        lua_pushstring(L, k);                                                  \
+        lua_pushnumber(L, n);                                                  \
+        lua_rawset(L, -3);                                                     \
+    }                                                                          \
+    while (0)
 
-#define lstate_fn2tbl(L,k,fn) do{           \
-    lua_pushstring(L,k);                    \
-    lua_pushcfunction(L,fn);                \
-    lua_rawset(L,-3);                       \
-}while(0)
-
+#define lstate_fn2tbl(L, k, fn)                                                \
+    do {                                                                       \
+        lua_pushstring(L, k);                                                  \
+        lua_pushcfunction(L, fn);                                              \
+        lua_rawset(L, -3);                                                     \
+    }                                                                          \
+    while (0)
 
 // convert uppercase to lowercase
-#define upper2lower( str, len ) do {                \
-    size_t n = 0;                                   \
-    for( n = 0; n < (len); n++ ){                   \
-        ((char*)(str))[n] = tolower( (str)[n] );    \
-    }                                               \
-}while(0)
-
+#define upper2lower(str, len)                                                  \
+    do {                                                                       \
+        size_t n = 0;                                                          \
+        for (n = 0; n < (len); n++) {                                          \
+            ((char *)(str))[n] = tolower((str)[n]);                            \
+        }                                                                      \
+    }                                                                          \
+    while (0)
 
 typedef struct {
     struct phr_header *headers;
     uint8_t maxhdr;
 } lpicohttpparser_t;
 
-
-static int parse_request_lua( lua_State *L )
-{
-    lpicohttpparser_t *p = luaL_checkudata( L, 1, MODULE_MT );
+static int parse_request_lua(lua_State *L) {
+    lpicohttpparser_t *p = luaL_checkudata(L, 1, MODULE_MT);
     size_t len = 0;
-    const char *buf = luaL_checklstring( L, 4, &len );
-    lua_Integer prevlen = luaL_optinteger( L, 5, 0 );
+    const char *buf = luaL_checklstring(L, 4, &len);
+    lua_Integer prevlen = luaL_optinteger(L, 5, 0);
     lua_Integer tolowercase = 0;
     size_t nhdr = p->maxhdr;
     const char *method = NULL;
@@ -107,132 +112,123 @@ static int parse_request_lua( lua_State *L )
     int minor_ver = 0;
 
     // check container table
-    luaL_checktype( L, 2, LUA_TTABLE );
-    luaL_checktype( L, 3, LUA_TTABLE );
-    if( lua_gettop( L ) > 5 ){
-        luaL_checktype( L, 6, LUA_TBOOLEAN );
-        tolowercase = lua_toboolean( L, 6 );
+    luaL_checktype(L, 2, LUA_TTABLE);
+    luaL_checktype(L, 3, LUA_TTABLE);
+    if (lua_gettop(L) > 5) {
+        luaL_checktype(L, 6, LUA_TBOOLEAN);
+        tolowercase = lua_toboolean(L, 6);
     }
 
     // returns number of bytes consumed if successful
     // -2 if request is partial
     // -1 if failed
-    prevlen = phr_parse_request( buf, len, &method, &mlen, &path, &plen,
-                                 &minor_ver, p->headers, &nhdr,
-                                 (size_t)prevlen );
+    prevlen = phr_parse_request(buf, len, &method, &mlen, &path, &plen,
+                                &minor_ver, p->headers, &nhdr, (size_t)prevlen);
     // successfully parsed the request
-    if( prevlen >= 0 )
-    {
+    if (prevlen >= 0) {
         size_t i = 0;
 
         // export to table
-        lua_settop( L, 3 );
+        lua_settop(L, 3);
 
         // add headers
-        if( tolowercase )
-        {
-            for(; i < nhdr; i++ ){
+        if (tolowercase) {
+            for (; i < nhdr; i++) {
                 // convert header-name to lowercase
-                upper2lower( p->headers[i].name, p->headers[i].name_len );
+                upper2lower(p->headers[i].name, p->headers[i].name_len);
 
-                lua_pushlstring( L, p->headers[i].name, p->headers[i].name_len );
-                lua_rawget( L, -2 );
-                switch( lua_type( L, -1 ) )
-                {
-                    case LUA_TNIL:
-                        lua_pop( L, 1 );
-                        lstate_strll2tbl(
-                            L, p->headers[i].name, p->headers[i].name_len,
-                            p->headers[i].value, p->headers[i].value_len );
-                        break;
+                lua_pushlstring(L, p->headers[i].name, p->headers[i].name_len);
+                lua_rawget(L, -2);
+                switch (lua_type(L, -1)) {
+                case LUA_TNIL:
+                    lua_pop(L, 1);
+                    lstate_strll2tbl(
+                        L, p->headers[i].name, p->headers[i].name_len,
+                        p->headers[i].value, p->headers[i].value_len);
+                    break;
 
-                    case LUA_TSTRING:
-                        lua_pushlstring( L, p->headers[i].name,
-                                        p->headers[i].name_len );
-                        lua_createtable( L, 3, 0 );
-                        // set existing value to table
-                        lua_pushvalue( L, -3 );
-                        lua_rawseti( L, -2, 1 );
-                        // set value to table
-                        lua_pushlstring( L, p->headers[i].value,
-                                        p->headers[i].value_len );
-                        lua_rawseti( L, -2, 2 );
-                        // replace existing value to table
-                        lua_rawset( L, -4 );
-                        lua_pop( L, 1 );
-                        break;
+                case LUA_TSTRING:
+                    lua_pushlstring(L, p->headers[i].name,
+                                    p->headers[i].name_len);
+                    lua_createtable(L, 3, 0);
+                    // set existing value to table
+                    lua_pushvalue(L, -3);
+                    lua_rawseti(L, -2, 1);
+                    // set value to table
+                    lua_pushlstring(L, p->headers[i].value,
+                                    p->headers[i].value_len);
+                    lua_rawseti(L, -2, 2);
+                    // replace existing value to table
+                    lua_rawset(L, -4);
+                    lua_pop(L, 1);
+                    break;
 
-                    case LUA_TTABLE:
-                        // set value to table
-                        lua_pushlstring( L, p->headers[i].value,
-                                        p->headers[i].value_len );
-                        lua_rawseti( L, -2, arrlen( L, -2 ) + 1 );
-                        lua_pop( L, 1 );
-                        break;
+                case LUA_TTABLE:
+                    // set value to table
+                    lua_pushlstring(L, p->headers[i].value,
+                                    p->headers[i].value_len);
+                    lua_rawseti(L, -2, arrlen(L, -2) + 1);
+                    lua_pop(L, 1);
+                    break;
                 }
             }
-        }
-        else
-        {
+        } else {
             // add headers
-            for(; i < nhdr; i++ ){
-                lua_pushlstring( L, p->headers[i].name, p->headers[i].name_len );
-                lua_rawget( L, -2 );
-                switch( lua_type( L, -1 ) )
-                {
-                    case LUA_TNIL:
-                        lua_pop( L, 1 );
-                        lstate_strll2tbl(
-                            L, p->headers[i].name, p->headers[i].name_len,
-                            p->headers[i].value, p->headers[i].value_len );
-                        break;
+            for (; i < nhdr; i++) {
+                lua_pushlstring(L, p->headers[i].name, p->headers[i].name_len);
+                lua_rawget(L, -2);
+                switch (lua_type(L, -1)) {
+                case LUA_TNIL:
+                    lua_pop(L, 1);
+                    lstate_strll2tbl(
+                        L, p->headers[i].name, p->headers[i].name_len,
+                        p->headers[i].value, p->headers[i].value_len);
+                    break;
 
-                    case LUA_TSTRING:
-                        lua_pushlstring( L, p->headers[i].name,
-                                        p->headers[i].name_len );
-                        lua_createtable( L, 3, 0 );
-                        // set existing value to table
-                        lua_pushvalue( L, -3 );
-                        lua_rawseti( L, -2, 1 );
-                        // set value to table
-                        lua_pushlstring( L, p->headers[i].value,
-                                        p->headers[i].value_len );
-                        lua_rawseti( L, -2, 2 );
-                        // replace existing value to table
-                        lua_rawset( L, -4 );
-                        lua_pop( L, 1 );
-                        break;
+                case LUA_TSTRING:
+                    lua_pushlstring(L, p->headers[i].name,
+                                    p->headers[i].name_len);
+                    lua_createtable(L, 3, 0);
+                    // set existing value to table
+                    lua_pushvalue(L, -3);
+                    lua_rawseti(L, -2, 1);
+                    // set value to table
+                    lua_pushlstring(L, p->headers[i].value,
+                                    p->headers[i].value_len);
+                    lua_rawseti(L, -2, 2);
+                    // replace existing value to table
+                    lua_rawset(L, -4);
+                    lua_pop(L, 1);
+                    break;
 
-                    case LUA_TTABLE:
-                        // set value to table
-                        lua_pushlstring( L, p->headers[i].value,
-                                        p->headers[i].value_len );
-                        lua_rawseti( L, -2, arrlen( L, -2 ) + 1 );
-                        lua_pop( L, 1 );
-                        break;
+                case LUA_TTABLE:
+                    // set value to table
+                    lua_pushlstring(L, p->headers[i].value,
+                                    p->headers[i].value_len);
+                    lua_rawseti(L, -2, arrlen(L, -2) + 1);
+                    lua_pop(L, 1);
+                    break;
                 }
             }
         }
-        lua_pop( L, 1 );
+        lua_pop(L, 1);
 
         // add request-line
-        lstate_str2tbl( L, "method", method, mlen );
-        lstate_str2tbl( L, "path", path, plen );
-        lstate_num2tbl( L, "minor_version", minor_ver );
+        lstate_str2tbl(L, "method", method, mlen);
+        lstate_str2tbl(L, "path", path, plen);
+        lstate_num2tbl(L, "minor_version", minor_ver);
     }
     // add consumed bytes
-    lua_pushinteger( L, prevlen );
+    lua_pushinteger(L, prevlen);
 
     return 1;
 }
 
-
-static int parse_response_lua( lua_State *L )
-{
-    lpicohttpparser_t *p = luaL_checkudata( L, 1, MODULE_MT );
+static int parse_response_lua(lua_State *L) {
+    lpicohttpparser_t *p = luaL_checkudata(L, 1, MODULE_MT);
     size_t len = 0;
-    const char *buf = luaL_checklstring( L, 4, &len );
-    lua_Integer prevlen = luaL_optinteger( L, 5, 0 );
+    const char *buf = luaL_checklstring(L, 4, &len);
+    lua_Integer prevlen = luaL_optinteger(L, 5, 0);
     lua_Integer tolowercase = 0;
     size_t nhdr = p->maxhdr;
     int minor_ver = 0;
@@ -241,204 +237,183 @@ static int parse_response_lua( lua_State *L )
     size_t mlen = 0;
 
     // check container table
-    luaL_checktype( L, 2, LUA_TTABLE );
-    luaL_checktype( L, 3, LUA_TTABLE );
-    if( lua_gettop( L ) > 5 ){
-        luaL_checktype( L, 6, LUA_TBOOLEAN );
-        tolowercase = lua_toboolean( L, 6 );
+    luaL_checktype(L, 2, LUA_TTABLE);
+    luaL_checktype(L, 3, LUA_TTABLE);
+    if (lua_gettop(L) > 5) {
+        luaL_checktype(L, 6, LUA_TBOOLEAN);
+        tolowercase = lua_toboolean(L, 6);
     }
 
     // returns number of bytes consumed if successful
     // -2 if request is partial
     // -1 if failed
-    prevlen = phr_parse_response( buf, len, &minor_ver, &status, &msg, &mlen,
-                                  p->headers, &nhdr, (size_t)prevlen );
+    prevlen = phr_parse_response(buf, len, &minor_ver, &status, &msg, &mlen,
+                                 p->headers, &nhdr, (size_t)prevlen);
     // successfully parsed the response
-    if( prevlen >= 0 )
-    {
+    if (prevlen >= 0) {
         size_t i = 0;
 
         // export to table
-        lua_settop( L, 3 );
+        lua_settop(L, 3);
         // add headers
-        if( tolowercase )
-        {
-            for(; i < nhdr; i++ ){
+        if (tolowercase) {
+            for (; i < nhdr; i++) {
                 // convert header-name to lowercase
-                upper2lower( p->headers[i].name, p->headers[i].name_len );
+                upper2lower(p->headers[i].name, p->headers[i].name_len);
 
-                lua_pushlstring( L, p->headers[i].name, p->headers[i].name_len );
-                lua_rawget( L, -2 );
-                switch( lua_type( L, -1 ) )
-                {
-                    case LUA_TNIL:
-                        lua_pop( L, 1 );
-                        lstate_strll2tbl(
-                            L, p->headers[i].name, p->headers[i].name_len,
-                            p->headers[i].value, p->headers[i].value_len );
-                        break;
+                lua_pushlstring(L, p->headers[i].name, p->headers[i].name_len);
+                lua_rawget(L, -2);
+                switch (lua_type(L, -1)) {
+                case LUA_TNIL:
+                    lua_pop(L, 1);
+                    lstate_strll2tbl(
+                        L, p->headers[i].name, p->headers[i].name_len,
+                        p->headers[i].value, p->headers[i].value_len);
+                    break;
 
-                    case LUA_TSTRING:
-                        lua_pushlstring( L, p->headers[i].name,
-                                        p->headers[i].name_len );
-                        lua_createtable( L, 3, 0 );
-                        // set existing value to table
-                        lua_pushvalue( L, -3 );
-                        lua_rawseti( L, -2, 1 );
-                        // set value to table
-                        lua_pushlstring( L, p->headers[i].value,
-                                        p->headers[i].value_len );
-                        lua_rawseti( L, -2, 2 );
-                        // replace existing value to table
-                        lua_rawset( L, -4 );
-                        lua_pop( L, 1 );
-                        break;
+                case LUA_TSTRING:
+                    lua_pushlstring(L, p->headers[i].name,
+                                    p->headers[i].name_len);
+                    lua_createtable(L, 3, 0);
+                    // set existing value to table
+                    lua_pushvalue(L, -3);
+                    lua_rawseti(L, -2, 1);
+                    // set value to table
+                    lua_pushlstring(L, p->headers[i].value,
+                                    p->headers[i].value_len);
+                    lua_rawseti(L, -2, 2);
+                    // replace existing value to table
+                    lua_rawset(L, -4);
+                    lua_pop(L, 1);
+                    break;
 
-                    case LUA_TTABLE:
-                        // set value to table
-                        lua_pushlstring( L, p->headers[i].value,
-                                        p->headers[i].value_len );
-                        lua_rawseti( L, -2, arrlen( L, -2 ) + 1 );
-                        lua_pop( L, 1 );
-                        break;
+                case LUA_TTABLE:
+                    // set value to table
+                    lua_pushlstring(L, p->headers[i].value,
+                                    p->headers[i].value_len);
+                    lua_rawseti(L, -2, arrlen(L, -2) + 1);
+                    lua_pop(L, 1);
+                    break;
+                }
+            }
+        } else {
+            for (; i < nhdr; i++) {
+                lua_pushlstring(L, p->headers[i].name, p->headers[i].name_len);
+                lua_rawget(L, -2);
+                switch (lua_type(L, -1)) {
+                case LUA_TNIL:
+                    lua_pop(L, 1);
+                    lstate_strll2tbl(
+                        L, p->headers[i].name, p->headers[i].name_len,
+                        p->headers[i].value, p->headers[i].value_len);
+                    break;
+
+                case LUA_TSTRING:
+                    lua_pushlstring(L, p->headers[i].name,
+                                    p->headers[i].name_len);
+                    lua_createtable(L, 3, 0);
+                    // set existing value to table
+                    lua_pushvalue(L, -3);
+                    lua_rawseti(L, -2, 1);
+                    // set value to table
+                    lua_pushlstring(L, p->headers[i].value,
+                                    p->headers[i].value_len);
+                    lua_rawseti(L, -2, 2);
+                    // replace existing value to table
+                    lua_rawset(L, -4);
+                    lua_pop(L, 1);
+                    break;
+
+                case LUA_TTABLE:
+                    // set value to table
+                    lua_pushlstring(L, p->headers[i].value,
+                                    p->headers[i].value_len);
+                    lua_rawseti(L, -2, arrlen(L, -2) + 1);
+                    lua_pop(L, 1);
+                    break;
                 }
             }
         }
-        else
-        {
-            for(; i < nhdr; i++ ){
-                lua_pushlstring( L, p->headers[i].name, p->headers[i].name_len );
-                lua_rawget( L, -2 );
-                switch( lua_type( L, -1 ) )
-                {
-                    case LUA_TNIL:
-                        lua_pop( L, 1 );
-                        lstate_strll2tbl(
-                            L, p->headers[i].name, p->headers[i].name_len,
-                            p->headers[i].value, p->headers[i].value_len );
-                        break;
-
-                    case LUA_TSTRING:
-                        lua_pushlstring( L, p->headers[i].name,
-                                        p->headers[i].name_len );
-                        lua_createtable( L, 3, 0 );
-                        // set existing value to table
-                        lua_pushvalue( L, -3 );
-                        lua_rawseti( L, -2, 1 );
-                        // set value to table
-                        lua_pushlstring( L, p->headers[i].value,
-                                        p->headers[i].value_len );
-                        lua_rawseti( L, -2, 2 );
-                        // replace existing value to table
-                        lua_rawset( L, -4 );
-                        lua_pop( L, 1 );
-                        break;
-
-                    case LUA_TTABLE:
-                        // set value to table
-                        lua_pushlstring( L, p->headers[i].value,
-                                        p->headers[i].value_len );
-                        lua_rawseti( L, -2, arrlen( L, -2 ) + 1 );
-                        lua_pop( L, 1 );
-                        break;
-                }
-            }
-        }
-        lua_pop( L, 1 );
+        lua_pop(L, 1);
 
         // add status-line
-        lstate_num2tbl( L, "minor_version", minor_ver );
-        lstate_num2tbl( L, "status", status );
-        lstate_str2tbl( L, "message", msg, mlen );
+        lstate_num2tbl(L, "minor_version", minor_ver);
+        lstate_num2tbl(L, "status", status);
+        lstate_str2tbl(L, "message", msg, mlen);
     }
     // add consumed bytes
-    lua_pushinteger( L, prevlen );
+    lua_pushinteger(L, prevlen);
 
     return 1;
 }
 
-
-static int tostring_lua( lua_State *L )
-{
-    lua_pushfstring( L, MODULE_MT ": %p", lua_touserdata( L, 1 ) );
+static int tostring_lua(lua_State *L) {
+    lua_pushfstring(L, MODULE_MT ": %p", lua_touserdata(L, 1));
     return 1;
 }
 
-
-static int gc_lua( lua_State *L )
-{
-    free( ((lpicohttpparser_t*)lua_touserdata( L, 1 ))->headers );
+static int gc_lua(lua_State *L) {
+    free(((lpicohttpparser_t *)lua_touserdata(L, 1))->headers);
     return 0;
 }
 
-
-static int new_lua( lua_State *L )
-{
-    int maxhdr = (int)luaL_optinteger( L, 1, DEFAULT_MAX_HDR );
+static int new_lua(lua_State *L) {
+    int maxhdr = (int)luaL_optinteger(L, 1, DEFAULT_MAX_HDR);
     lpicohttpparser_t *p = NULL;
 
-    if( maxhdr > UINT8_MAX ){
-        return luaL_argerror( L, 1, "maxhdr must be less than UINT8_MAX" );
+    if (maxhdr > UINT8_MAX) {
+        return luaL_argerror(L, 1, "maxhdr must be less than UINT8_MAX");
     }
 
-    p = lua_newuserdata( L, sizeof( lpicohttpparser_t ) );
-    p->headers = calloc( maxhdr, sizeof( struct phr_header ) );
-    if( p->headers ){
+    p = lua_newuserdata(L, sizeof(lpicohttpparser_t));
+    p->headers = calloc(maxhdr, sizeof(struct phr_header));
+    if (p->headers) {
         p->maxhdr = maxhdr;
-        luaL_getmetatable( L, MODULE_MT );
-        lua_setmetatable( L, -2 );
+        luaL_getmetatable(L, MODULE_MT);
+        lua_setmetatable(L, -2);
         return 1;
     }
 
     // got error
-    lua_pushnil( L );
-    lua_pushstring( L, strerror( errno ) );
+    lua_pushnil(L);
+    lua_pushstring(L, strerror(errno));
 
     return 2;
 }
 
-
-LUALIB_API int luaopen_picohttpparser( lua_State *L )
-{
+LUALIB_API int luaopen_picohttpparser(lua_State *L) {
     struct luaL_Reg mmethods[] = {
-        { "__gc", gc_lua },
-        { "__tostring", tostring_lua },
-        { NULL, NULL }
-    };
-    struct luaL_Reg methods[] = {
-        // method
-        { "parseRequest", parse_request_lua },
-        { "parseResponse", parse_response_lua },
-        { NULL, NULL }
-    };
+        {"__gc", gc_lua}, {"__tostring", tostring_lua}, {NULL, NULL}};
+    struct luaL_Reg methods[] = {// method
+                                 {"parseRequest", parse_request_lua},
+                                 {"parseResponse", parse_response_lua},
+                                 {NULL, NULL}};
     struct luaL_Reg *ptr = mmethods;
 
     // create metatable
-    luaL_newmetatable( L, MODULE_MT );
+    luaL_newmetatable(L, MODULE_MT);
     // metamethods
     do {
-        lstate_fn2tbl( L, ptr->name, ptr->func );
+        lstate_fn2tbl(L, ptr->name, ptr->func);
         ptr++;
-    } while( ptr->name );
+    }
+    while (ptr->name);
     // methods
     ptr = methods;
-    lua_pushstring( L, "__index" );
-    lua_newtable( L );
+    lua_pushstring(L, "__index");
+    lua_newtable(L);
     do {
-        lstate_fn2tbl( L, ptr->name, ptr->func );
+        lstate_fn2tbl(L, ptr->name, ptr->func);
         ptr++;
-    } while( ptr->name );
-    lua_rawset( L, -3 );
+    }
+    while (ptr->name);
+    lua_rawset(L, -3);
     // remove metatable from stack
-    lua_pop( L, 1 );
-
+    lua_pop(L, 1);
 
     // register allocator
-    lua_createtable( L, 0, 1 );
-    lstate_fn2tbl( L, "new", new_lua );
+    lua_createtable(L, 0, 1);
+    lstate_fn2tbl(L, "new", new_lua);
 
     return 1;
 }
-
-
-
